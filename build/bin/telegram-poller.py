@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""PavOS Telegram two-way (v1.5). One chat only. Read-only MCP; no sends."""
+import json, os, subprocess, time, urllib.parse, urllib.request, uuid, datetime
+HOME = "/home/pavlos"; VAULT = f"{HOME}/pavos-health"
+env = dict(l.strip().split("=", 1) for l in open(f"{HOME}/.pavos-health.env") if "=" in l)
+TOKEN, CHAT = env["TELEGRAM_TOKEN"], int(env["TELEGRAM_CHAT_ID"])
+API = f"https://api.telegram.org/bot{TOKEN}/"
+LOGDIR = f"{VAULT}/build/logs"; os.makedirs(LOGDIR, exist_ok=True)
+OFFSET_F, SESSION_F, LOG_F = f"{LOGDIR}/tg.offset", f"{LOGDIR}/tg.session", f"{LOGDIR}/telegram.log"
+ALLOW = ("Read,Glob,Grep,Edit,Write,Bash(git add:*),Bash(git commit:*),Bash(git log:*),Bash(git status:*),Bash(date:*),Bash(ls:*),Bash(cat:*),"
+ "mcp__claude_ai_Gmail__search_threads,mcp__claude_ai_Gmail__get_thread,mcp__claude_ai_Gmail__get_message,mcp__claude_ai_Gmail__list_labels,"
+ "mcp__claude_ai_Google_Calendar__list_calendars,mcp__claude_ai_Google_Calendar__list_events,mcp__claude_ai_Google_Calendar__get_event,mcp__claude_ai_Google_Calendar__create_event,mcp__claude_ai_Google_Calendar__update_event,mcp__claude_ai_Google_Calendar__delete_event,"
+ "mcp__claude_ai_Google_Drive__search_files,mcp__claude_ai_Google_Drive__download_file_content,mcp__claude_ai_Google_Drive__get_file_metadata")
+DENY = ("mcp__claude_ai_Gmail__send_message,mcp__claude_ai_Gmail__reply,mcp__claude_ai_Gmail__forward,mcp__claude_ai_Gmail__create_draft,mcp__claude_ai_Gmail__update_draft,mcp__claude_ai_Gmail__trash_message,mcp__claude_ai_Gmail__trash_thread,"
+ ""
+ "mcp__claude_ai_Google_Drive__create_file,mcp__claude_ai_Google_Drive__update_file,mcp__claude_ai_Google_Drive__trash_file,mcp__claude_ai_Google_Drive__share_file,Bash(git push:*),Bash(curl:*),Bash(rm:*)")
+ENV = dict(os.environ, HOME=HOME, PATH=f"{HOME}/.local/bin:/usr/local/bin:/usr/bin:/bin", TZ="Europe/London")
+
+def api(method, **kw):
+    data = urllib.parse.urlencode(kw).encode()
+    with urllib.request.urlopen(API + method, data=data, timeout=70) as r: return json.load(r)
+def log(kind, text):
+    with open(LOG_F, "a") as f: f.write(f"{datetime.datetime.now():%F %T} {kind}: {text.replace(chr(10),' / ')[:2000]}\n")
+def send(text):
+    text = text.strip() or "(empty reply)"
+    for i in range(0, len(text), 3900): api("sendMessage", chat_id=CHAT, text=text[i:i+3900])
+def rf(p, d=""): return open(p).read().strip() if os.path.exists(p) else d
+def ask(text):
+    now = datetime.datetime.now().strftime("%a %d %b %H:%M")
+    prompt = (f"Telegram message from Pavlos, {now} Europe/London. Reply in plain text, no markdown, under 3500 characters. "
+              "Follow CLAUDE.md. Pre-graduation: no sends; if a send would be the right action, describe it under 'Ready to send'. "
+              "If the message is a data one-liner (weight, training, food), append it to the right data/*.csv and confirm in five words. If it is a ruling or a fact, update the right wiki page, append one line to wiki/log.md, and git commit. "
+              f"Message: {text}")
+    sid = rf(SESSION_F)
+    base = ["claude", "-p", prompt, "--allowedTools", ALLOW, "--disallowedTools", DENY, "--permission-mode", "acceptEdits", "--output-format", "text"]
+    if sid:
+        r = subprocess.run(base + ["--resume", sid], cwd=VAULT, env=ENV, capture_output=True, text=True, timeout=300)
+        if r.returncode == 0: return r.stdout
+        log("resume-failed", r.stderr)
+    sid = str(uuid.uuid4()); open(SESSION_F, "w").write(sid)
+    r = subprocess.run(base + ["--session-id", sid], cwd=VAULT, env=ENV, capture_output=True, text=True, timeout=300)
+    return r.stdout if r.returncode == 0 else f"PavOS error (rc={r.returncode}): {r.stderr[-800:]}"
+
+offset = int(rf(OFFSET_F, "0") or 0)
+log("start", f"poller up, offset {offset}")
+while True:
+    try:
+        upd = api("getUpdates", timeout=50, offset=offset)
+    except Exception as e:
+        log("poll-error", str(e)); time.sleep(5); continue
+    for u in upd.get("result", []):
+        offset = u["update_id"] + 1; open(OFFSET_F, "w").write(str(offset))
+        m = u.get("message") or {}; text = m.get("text", "")
+        if m.get("chat", {}).get("id") != CHAT: log("rejected", f"chat {m.get('chat',{}).get('id')}"); continue
+        if not text: continue
+        log("in", text)
+        if text.strip().lower() == "/new":
+            if os.path.exists(SESSION_F): os.remove(SESSION_F)
+            send("New session."); continue
+        try: api("sendChatAction", chat_id=CHAT, action="typing")
+        except Exception: pass
+        try: reply = ask(text)
+        except subprocess.TimeoutExpired: reply = "PavOS: timed out after 5 minutes."
+        log("out", reply); send(reply)
