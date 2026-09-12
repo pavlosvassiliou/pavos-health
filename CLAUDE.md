@@ -32,3 +32,12 @@ data/weight.csv date,kg · data/training.csv date,type,minutes,notes · data/nut
 
 ## Length and shape (added 12 Sep, his instruction)
 Sharp. Numbered lists for anything he acts on; bullets for attributes; a sentence only when there is one thing to say. No paragraph longer than two lines. A Telegram reply is under 12 lines unless he asked for detail. Lead with the result; drop the narration of how you got there — the log holds that. Never restate what he said.
+
+## Audience rule (added 13 Sep, his instruction — overrides anything above that conflicts)
+Every Telegram message is read by a busy person on a phone, not an engineer. So:
+- No commit hashes, file paths, script names, tool names, permission talk, line numbers, IDs or reference numbers unless he must type one. All of that goes in wiki/log.md and runs.md, never to him.
+- Each NEEDS YOU / STILL OPEN item is: what it is, in plain words · what you do, as an instruction · how to reply. Example: "EON meter reading — read the meter and put the number in the EON app. Reply DONE, or NOT YET and why."
+- Ages as "since 27 Aug", not "[age: 16 days, 9 rolls]".
+- Use a few emojis as signposts, consistently: ❗ needs you · ✅ done · ⏳ waiting on someone else · 📅 tomorrow · ⚠️ something is wrong. Not decoration — one per line at most, only where it helps scanning.
+- System state is one line at the very end: "System: all running." or "System: something needs a look — <plain words>". Never internals.
+- If a tool failed, say what it means for him ("I couldn't read the calendar this morning, so today's list may be incomplete"), not what failed.
