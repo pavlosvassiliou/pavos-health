@@ -34,11 +34,11 @@ def ask(text):
     sid = rf(SESSION_F)
     base = ["claude", "-p", prompt, "--allowedTools", ALLOW, "--disallowedTools", DENY, "--permission-mode", "acceptEdits", "--output-format", "text"]
     if sid:
-        r = subprocess.run(base + ["--resume", sid], cwd=VAULT, env=ENV, capture_output=True, text=True, timeout=300)
+        r = subprocess.run(base + ["--resume", sid], cwd=VAULT, env=ENV, capture_output=True, text=True, timeout=600)
         if r.returncode == 0: return r.stdout
         log("resume-failed", r.stderr)
     sid = str(uuid.uuid4()); open(SESSION_F, "w").write(sid)
-    r = subprocess.run(base + ["--session-id", sid], cwd=VAULT, env=ENV, capture_output=True, text=True, timeout=300)
+    r = subprocess.run(base + ["--session-id", sid], cwd=VAULT, env=ENV, capture_output=True, text=True, timeout=600)
     return r.stdout if r.returncode == 0 else f"PavOS error (rc={r.returncode}): {r.stderr[-800:]}"
 
 offset = int(rf(OFFSET_F, "0") or 0)
@@ -60,5 +60,5 @@ while True:
         try: api("sendChatAction", chat_id=CHAT, action="typing")
         except Exception: pass
         try: reply = ask(text)
-        except subprocess.TimeoutExpired: reply = "PavOS: timed out after 5 minutes."
+        except subprocess.TimeoutExpired: reply = "PavOS: timed out after 10 minutes."
         log("out", reply); send(reply)
