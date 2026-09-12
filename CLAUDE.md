@@ -29,3 +29,6 @@ Same as the life side: warm, direct, conclusion first, numbered lists for anythi
 
 ## Data conventions
 data/weight.csv date,kg · data/training.csv date,type,minutes,notes · data/nutrition.csv date,item,notes · others as they arise, date-first, append-only.
+
+## Length and shape (added 12 Sep, his instruction)
+Sharp. Numbered lists for anything he acts on; bullets for attributes; a sentence only when there is one thing to say. No paragraph longer than two lines. A Telegram reply is under 12 lines unless he asked for detail. Lead with the result; drop the narration of how you got there — the log holds that. Never restate what he said.
