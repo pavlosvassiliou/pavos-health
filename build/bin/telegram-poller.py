@@ -54,6 +54,8 @@ while True:
         if m.get("chat", {}).get("id") != CHAT: log("rejected", f"chat {m.get('chat',{}).get('id')}"); continue
         if not text: continue
         log("in", text)
+        if text.strip().lower() == "/status":
+            send(subprocess.run([f"{VAULT}/build/bin/healthcheck.sh"], capture_output=True, text=True).stdout); continue
         if text.strip().lower() == "/new":
             if os.path.exists(SESSION_F): os.remove(SESSION_F)
             send("New session."); continue
