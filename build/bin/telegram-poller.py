@@ -51,6 +51,16 @@ while True:
     for u in upd.get("result", []):
         offset = u["update_id"] + 1; open(OFFSET_F, "w").write(str(offset))
         m = u.get("message") or {}; text = m.get("text", "")
+        if m.get("photo") or m.get("document"):
+            try:
+                f = (m.get("photo") or [None])[-1] or m.get("document")
+                info = api("getFile", file_id=f["file_id"])["result"]["file_path"]
+                ext = os.path.splitext(info)[1] or ".jpg"; pdir = f"{VAULT}/data/photos"; os.makedirs(pdir, exist_ok=True)
+                dest = f"{pdir}/{datetime.datetime.now():%Y-%m-%d-%H%M%S}{ext}"
+                urllib.request.urlretrieve(f"https://api.telegram.org/file/bot{TOKEN}/{info}", dest)
+                text = f"[Photo saved at {dest} — open it with the Read tool and look at it.] " + (m.get("caption") or "")
+            except Exception as e:
+                log("photo-error", str(e)); text = "[A photo arrived but could not be saved.] " + (m.get("caption") or "")
         if m.get("chat", {}).get("id") != CHAT: log("rejected", f"chat {m.get('chat',{}).get('id')}"); continue
         if not text: continue
         log("in", text)
