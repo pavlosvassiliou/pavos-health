@@ -41,3 +41,6 @@ Every Telegram message is read by a busy person on a phone, not an engineer. So:
 - Use a few emojis as signposts, consistently: ❗ needs you · ✅ done · ⏳ waiting on someone else · 📅 tomorrow · ⚠️ something is wrong. Not decoration — one per line at most, only where it helps scanning.
 - System state is one line at the very end: "System: all running." or "System: something needs a look — <plain words>". Never internals.
 - If a tool failed, say what it means for him ("I couldn't read the calendar this morning, so today's list may be incomplete"), not what failed.
+
+## Links (added 17 Sep)
+Pages are a graph, not a tree. When a fact touches two pages, link them both ways with [[page-name]] (the file name without .md): a person to the item that involves them, an account to the subscription decision about it, a now.md item to the register row it depends on. When you read a page and it links onward, follow the link if it bears on the question. Never add a link for its own sake — only where the next reader would otherwise have to guess.
