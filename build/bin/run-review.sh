@@ -13,7 +13,7 @@ DENY="mcp__claude_ai_Gmail__send_message,mcp__claude_ai_Gmail__reply,mcp__claude
 mcp__claude_ai_Google_Calendar__create_event,mcp__claude_ai_Google_Calendar__update_event,mcp__claude_ai_Google_Calendar__delete_event,mcp__claude_ai_Google_Calendar__respond_to_event,\
 mcp__claude_ai_Google_Drive__create_file,mcp__claude_ai_Google_Drive__update_file,mcp__claude_ai_Google_Drive__trash_file,mcp__claude_ai_Google_Drive__share_file,Bash(git push:*),Bash(curl:*),Bash(rm:*)"
 PROMPT="Today is $(date '+%A %d %B %Y'), $(date +%H:%M) Europe/London. Execute skills/weekly-review/SKILL.md now, unattended, following CLAUDE.md. Status is draft: ZERO sends. Write the review text (exactly the Output shape) to build/logs/review-$STAMP.txt, write the handoff to /home/pavlos/pavos/handoffs/health-$TODAY.md and copy it to handoffs/, update wiki/now.md and wiki/log.md, append a row to skills/weekly-review/runs.md, then git add -A and git commit -m 'review $STAMP'. Do not push. Final reply: exactly one line, the path of the review text file."
-flock -w 900 "$HOME/.lock-pavos-health" timeout 420 claude -p "$PROMPT" --allowedTools "$ALLOW" --disallowedTools "$DENY" --permission-mode acceptEdits --add-dir /home/pavlos/pavos/handoffs >"$LOG.out" 2>>"$LOG"; RC=$?
+flock -w 900 "$HOME/.lock-pavos-health" timeout 420 claude -p "$PROMPT" --allowedTools "$ALLOW" --disallowedTools "$DENY" --permission-mode acceptEdits --add-dir /home/pavlos/pavos/handoffs --output-format json >"$LOG.json" 2>>"$LOG"; RC=$?; python3 /home/pavlos/pavos/build/bin/telemetry.py "$LOG.json" health-review /home/pavlos/pavos-health >"$LOG.out"
 OUT=$(ls -1 build/logs/review-"$TODAY"*.txt 2>/dev/null | tail -1)
 if [ -n "$OUT" ] && [ -s "$OUT" ]; then
   git push -q 2>>"$LOG" || true
