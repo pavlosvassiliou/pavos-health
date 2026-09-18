@@ -46,6 +46,10 @@ def _tel(r, label):
         if ctx>400000 and os.path.exists(SESSION_F): os.remove(SESSION_F); log("context reset", f"{ctx} tokens")
         return d.get("result","") or ""
     except Exception: return r.stdout
+HEAVY=("rebuild","audit","all ","every","migrate","regenerate","update the","review","pack","compare","judge")
+def pick_model(text):
+    t=text.lower(); heavy = len(text) > 80 or "[photo" in t or any(k in t for k in HEAVY)
+    m = "claude-opus-5" if heavy else "claude-sonnet-5"; log("model", m); return m
 def ask(text):
     now = datetime.datetime.now().strftime("%a %d %b %H:%M")
     prompt = (f"Telegram message from Pavlos, {now} Europe/London. Reply in plain text, no markdown, under 3500 characters. "
@@ -53,7 +57,7 @@ def ask(text):
               "If the message is a data one-liner (weight, training, food), append it to the right data/*.csv and confirm in five words. If it is a ruling or a fact, update the right wiki page, append one line to wiki/log.md, and git commit. "
               f"Message: {text}")
     sid = rf(SESSION_F)
-    base = ["claude", "-p", prompt, "--allowedTools", ALLOW, "--disallowedTools", DENY, "--permission-mode", "acceptEdits", "--output-format", "json"]
+    base = ["claude", "-p", prompt, "--allowedTools", ALLOW, "--disallowedTools", DENY, "--permission-mode", "acceptEdits", "--max-turns", "25", "--output-format", "json", "--model", pick_model(text)]
     if sid:
         r = subprocess.run(base + ["--resume", sid], cwd=VAULT, env=ENV, capture_output=True, text=True, timeout=600)
         if r.returncode == 0: return _tel(r, "chat")
